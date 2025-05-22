@@ -1,49 +1,38 @@
-'use client';
+"use client"
 
-import type React from 'react';
-import { useState, useRef, useEffect } from 'react';
-import { grokAIService, type GrokConversation } from '../../services';
-import type { SpecializedAssistant } from '../../types/aiEducationTypes';
-//import { LoadingSpinner } from '../ui/LoadingSpinner';
+import type React from "react"
+import { useState, useRef, useEffect } from "react"
+import { grokAIService, type GrokConversation } from "../../services"
+import type { SpecializedAssistant } from "../../types/aiEducationTypes"
+import LoadingSpinner from "../ui/LoadingSpinner"
 
 interface ChatInterfaceProps {
-  assistant: SpecializedAssistant;
-  topic?: string;
-  subtopic?: string;
+  assistant: SpecializedAssistant
+  topic?: string
+  subtopic?: string
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({
-  assistant,
-  topic,
-  subtopic,
-}) => {
-  const [conversation, setConversation] = useState<GrokConversation | null>(
-    null
-  );
-  const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ assistant, topic, subtopic }) => {
+  const [conversation, setConversation] = useState<GrokConversation | null>(null)
+  const [inputValue, setInputValue] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Initialize conversation with system prompt
   useEffect(() => {
-    const systemPrompt = generateSystemPrompt(assistant, topic, subtopic);
-    const newConversation = grokAIService.createConversation(systemPrompt);
-    setConversation(newConversation);
-  }, [assistant, topic, subtopic]);
+    const systemPrompt = generateSystemPrompt(assistant, topic, subtopic)
+    const newConversation = grokAIService.createConversation(systemPrompt)
+    setConversation(newConversation)
+  }, [assistant, topic, subtopic])
 
   // Generate system prompt based on assistant, topic, and subtopic
-  const generateSystemPrompt = (
-    assistant: SpecializedAssistant,
-    topic?: string,
-    subtopic?: string
-  ): string => {
-    let prompt = assistant.systemPrompt;
+  const generateSystemPrompt = (assistant: SpecializedAssistant, topic?: string, subtopic?: string): string => {
+    let prompt = `You are ${assistant.name}, ${assistant.description}`
 
     if (topic) {
-      prompt += `\n\nThe student is asking about ${topic}.`;
-
+      prompt += `\n\nThe student is asking about ${topic}.`
       if (subtopic) {
-        prompt += ` Specifically, they are interested in ${subtopic}.`;
+        prompt += ` Specifically, they are interested in ${subtopic}.`
       }
     }
 
@@ -52,89 +41,88 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 2. Age-appropriate for secondary school students
 3. Clear and easy to understand
 4. Include examples where helpful
-5. End with 2-3 suggested follow-up questions the student might want to ask
+5. Structured and well-organized
 
-If you reference any educational resources, please format them as:
-RESOURCES:
+At the end of your response, please include:
+
+Resources:
 - [Resource Title](URL or description)
-- [Resource Title](URL or description)`;
+- [Additional Resource](URL or description)
 
-    return prompt;
-  };
+Suggested Questions:
+- Follow-up question 1?
+- Follow-up question 2?
+- Follow-up question 3?`
+
+    return prompt
+  }
 
   // Scroll to bottom of chat
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
 
   useEffect(() => {
-    scrollToBottom();
-  }, [conversation]);
+    scrollToBottom()
+  }, [conversation])
 
   // Handle sending a message
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || !conversation || isLoading) return;
+    if (!inputValue.trim() || !conversation || isLoading) return
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
       // Add user message to conversation
-      const updatedConversation = grokAIService.addUserMessage(
-        conversation,
-        inputValue
-      );
-      setConversation(updatedConversation);
-      setInputValue('');
+      const updatedConversation = grokAIService.addUserMessage(conversation, inputValue)
+      setConversation(updatedConversation)
+      setInputValue("")
 
       // Get response from AI
-      const responseConversation = await grokAIService.sendMessage(
-        updatedConversation
-      );
-      setConversation(responseConversation);
+      const responseConversation = await grokAIService.sendMessage(updatedConversation)
+      setConversation(responseConversation)
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error("Error sending message:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // Handle pressing Enter to send message
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
     }
-  };
+  }
 
   // Render suggested questions as clickable buttons
   const renderSuggestedQuestions = (message: string) => {
     // Extract suggested questions from the message
     const match = message.match(
-      /(?:Here are some follow-up questions you might consider:|Some questions you might want to ask next:|You might want to ask:)([\s\S]*?)(?=$|RESOURCES:)/i
-    );
+      /(?:Here are some follow-up questions you might consider:|Some questions you might want to ask next:|You might want to ask:)([\s\S]*?)(?=$|RESOURCES:)/i,
+    )
 
-    if (!match || !match[1]) return null;
+    if (!match || !match[1]) return null
 
-    const questionsText = match[1].trim();
+    const questionsText = match[1].trim()
     const questions = questionsText
       .split(/\n+/)
-      .map((q) => q.replace(/^-\s*|\d+\.\s*/, '').trim())
-      .filter((q) => q.length > 0 && q.endsWith('?'));
+      .map((q) => q.replace(/^-\s*|\d+\.\s*/, "").trim())
+      .filter((q) => q.length > 0 && q.endsWith("?"))
 
-    if (questions.length === 0) return null;
+    if (questions.length === 0) return null
 
     return (
       <div className="mt-3 space-y-2">
-        <p className="text-sm font-medium text-gray-700">
-          Suggested questions:
-        </p>
+        <p className="text-sm font-medium text-gray-700">Suggested questions:</p>
         <div className="flex flex-wrap gap-2">
           {questions.map((question, index) => (
             <button
               key={index}
               className="px-3 py-1 text-sm bg-blue-50 text-blue-700 rounded-full hover:bg-blue-100 transition-colors"
               onClick={() => {
-                setInputValue(question);
+                setInputValue(question)
               }}
             >
               {question}
@@ -142,24 +130,24 @@ RESOURCES:
           ))}
         </div>
       </div>
-    );
-  };
+    )
+  }
 
   // Extract and render resources from the message
   const renderResources = (message: string) => {
     const resourcesMatch = message.match(
-      /RESOURCES:([\s\S]*?)(?=$|Some questions you might want to ask next:|You might want to ask:|Here are some follow-up questions)/i
-    );
+      /RESOURCES:([\s\S]*?)(?=$|Some questions you might want to ask next:|You might want to ask:|Here are some follow-up questions)/i,
+    )
 
-    if (!resourcesMatch || !resourcesMatch[1]) return null;
+    if (!resourcesMatch || !resourcesMatch[1]) return null
 
-    const resourcesText = resourcesMatch[1].trim();
+    const resourcesText = resourcesMatch[1].trim()
     const resources = resourcesText
       .split(/\n+/)
-      .map((r) => r.replace(/^-\s*/, '').trim())
-      .filter((r) => r.length > 0);
+      .map((r) => r.replace(/^-\s*/, "").trim())
+      .filter((r) => r.length > 0)
 
-    if (resources.length === 0) return null;
+    if (resources.length === 0) return null
 
     return (
       <div className="mt-3 p-3 bg-gray-50 rounded-lg">
@@ -167,20 +155,14 @@ RESOURCES:
         <ul className="space-y-1 text-sm">
           {resources.map((resource, index) => {
             // Try to extract title and URL if in markdown format
-            const linkMatch = resource.match(/\[(.*?)\]$$(.*?)$$/);
+            const linkMatch = resource.match(/\[(.*?)\]$$(.*?)$$/)
 
             if (linkMatch) {
-              const [, title, url] = linkMatch;
+              const [, title, url] = linkMatch
               return (
                 <li key={index}>
                   <a
-                    href={
-                      url.startsWith('http')
-                        ? url
-                        : `https://www.google.com/search?q=${encodeURIComponent(
-                            title
-                          )}`
-                    }
+                    href={url.startsWith("http") ? url : `https://www.google.com/search?q=${encodeURIComponent(title)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
@@ -188,15 +170,15 @@ RESOURCES:
                     {title}
                   </a>
                 </li>
-              );
+              )
             }
 
-            return <li key={index}>{resource}</li>;
+            return <li key={index}>{resource}</li>
           })}
         </ul>
       </div>
-    );
-  };
+    )
+  }
 
   // Format message content to handle markdown-like syntax
   const formatMessageContent = (content: string) => {
@@ -204,35 +186,32 @@ RESOURCES:
     let formattedContent = content
       .replace(
         /RESOURCES:[\s\S]*?(?=$|Some questions you might want to ask next:|You might want to ask:|Here are some follow-up questions)/i,
-        ''
+        "",
       )
       .replace(
         /(?:Here are some follow-up questions you might consider:|Some questions you might want to ask next:|You might want to ask:)[\s\S]*?$/i,
-        ''
+        "",
       )
-      .trim();
+      .trim()
 
     // Simple formatting for bold text
-    formattedContent = formattedContent.replace(
-      /\*\*(.*?)\*\*/g,
-      '<strong>$1</strong>'
-    );
+    formattedContent = formattedContent.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
 
     // Simple formatting for italic text
-    formattedContent = formattedContent.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    formattedContent = formattedContent.replace(/\*(.*?)\*/g, "<em>$1</em>")
 
     // Convert line breaks to <br> tags
-    formattedContent = formattedContent.replace(/\n/g, '<br>');
+    formattedContent = formattedContent.replace(/\n/g, "<br>")
 
-    return formattedContent;
-  };
+    return formattedContent
+  }
 
   if (!conversation) {
     return (
       <div className="flex justify-center p-8">
         <LoadingSpinner />
       </div>
-    );
+    )
   }
 
   return (
@@ -240,19 +219,12 @@ RESOURCES:
       {/* Chat messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {conversation.messages
-          .filter((msg) => msg.role !== 'system') // Don't show system messages
+          .filter((msg) => msg.role !== "system") // Don't show system messages
           .map((message, index) => (
-            <div
-              key={message.id}
-              className={`flex ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
+            <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
               <div
                 className={`max-w-3xl rounded-lg p-3 ${
-                  message.role === 'user'
-                    ? 'bg-blue-100 text-blue-900'
-                    : 'bg-gray-100 text-gray-800'
+                  message.role === "user" ? "bg-blue-100 text-blue-900" : "bg-gray-100 text-gray-800"
                 }`}
               >
                 <div
@@ -262,7 +234,7 @@ RESOURCES:
                   className="whitespace-pre-wrap"
                 />
 
-                {message.role === 'assistant' && (
+                {message.role === "assistant" && (
                   <>
                     {renderResources(message.content)}
                     {renderSuggestedQuestions(message.content)}
@@ -303,12 +275,10 @@ RESOURCES:
             Send
           </button>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Press Enter to send. Shift+Enter for new line.
-        </p>
+        <p className="text-xs text-gray-500 mt-2">Press Enter to send. Shift+Enter for new line.</p>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ChatInterface;
+export default ChatInterface
