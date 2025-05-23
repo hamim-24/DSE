@@ -30,8 +30,5 @@ export default defineConfig({
   },
   // Ensure proper handling of static assets
   assetsInclude: ["**/*.svg", "**/*.png", "**/*.jpg", "**/*.jpeg", "**/*.gif"],
-
-export default defineConfig({
   base: '/TeamenigmaSNIH202507/',
-  // other config...
 })
